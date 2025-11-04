@@ -51,3 +51,4 @@ models/
 public/sw.js
 public/workbox-*.js
 
+NAVIGATION_FLOW.md
