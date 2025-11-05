@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
 export default function SignupPage() {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -14,17 +16,12 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // If already logged in, bounce to dashboard (prevents getting stuck on signup)
+  // Removed auto-redirect to avoid getting stuck
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (token) {
-      router.replace('/dashboard');
-      return;
-    }
     const check = async () => {
       if (role === "student" && rollNo.trim().length > 0) {
         try {
-const res = await axios.get(`/api/v1/auth/check-roll/${encodeURIComponent(rollNo)}`);
+          const res = await axios.get(`${API_BASE}/auth/check-roll/${encodeURIComponent(rollNo)}`);
           setRollAvailable(res.data.available);
         } catch {
           setRollAvailable(null);
@@ -35,22 +32,25 @@ const res = await axios.get(`/api/v1/auth/check-roll/${encodeURIComponent(rollNo
     };
     const id = setTimeout(check, 400);
     return () => clearTimeout(id);
-  }, [rollNo, role]);
+  }, [rollNo, role, router]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     try {
-const res = await axios.post(`/api/v1/auth/signup`, {
+      const res = await axios.post(`${API_BASE}/auth/signup`, {
         name,
         email,
         password,
         role,
         roll_no: role === "student" ? rollNo : null,
       });
+      
+      // Store token and user data
       localStorage.setItem("token", res.data.access_token);
-      document.cookie = `token=${res.data.access_token}; Path=/; Max-Age=${7*24*60*60}`;
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      document.cookie = `token=${res.data.access_token}; Path=/; Max-Age=${7*24*60*60}; SameSite=Lax`;
       router.replace('/dashboard');
     } catch (err: any) {
       const detail = err.response?.data?.detail;

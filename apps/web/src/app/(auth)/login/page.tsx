@@ -1,34 +1,38 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (token) {
-      router.replace('/dashboard');
-    }
-  }, [router]);
+  // Removed auto-redirect to avoid UX loops
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     try {
-const res = await axios.post(`/api/v1/auth/login`, {
+      const res = await axios.post(`${API_BASE}/auth/login`, {
         email,
         password,
       });
+      
+      // Store token and user data
       localStorage.setItem("token", res.data.access_token);
-      document.cookie = `token=${res.data.access_token}; Path=/; Max-Age=${7*24*60*60}`;
-      router.replace('/dashboard');
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      document.cookie = `token=${res.data.access_token}; Path=/; Max-Age=${7*24*60*60}; SameSite=Lax`;
+      
+      // Redirect to original destination or dashboard
+      const redirectTo = searchParams.get('redirect') || '/dashboard';
+      router.replace(redirectTo);
     } catch (err: any) {
       const detail = err.response?.data?.detail;
       if (typeof detail === 'string') {
