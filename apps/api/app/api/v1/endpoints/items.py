@@ -8,6 +8,7 @@ from app.core.security import get_current_user
 from app.models.user import User
 from app.models.item import Item, ItemClaim
 from app.models.user import Profile
+from app.api.v1.endpoints.notifications import create_notification
 
 router = APIRouter()
 
@@ -245,6 +246,17 @@ async def claim_item(
     db.commit()
     db.refresh(claim)
     
+    # Notify item finder
+    if item.finder_id:
+        create_notification(
+            db=db,
+            user_id=str(item.finder_id),
+            notification_type="claim_made",
+            title="New Claim on Your Item",
+            message=f"Someone claimed your item: {item.title}",
+            link=f"/items/{item_id}"
+        )
+    
     return {"id": claim.id, "message": "Claim submitted"}
 
 @router.get("/{item_id}/claims")
@@ -303,6 +315,17 @@ async def update_claim(
         claim.status = "approved"
         item.status = "claimed"
         item.claimant_id = claim.claimant_id
+        
+        # Notify claimant
+        create_notification(
+            db=db,
+            user_id=str(claim.claimant_id),
+            notification_type="claim_approved",
+            title="Claim Approved!",
+            message=f"Your claim for '{item.title}' has been approved",
+            link=f"/items/{item_id}"
+        )
+        
         # Auto-reject all other pending claims for this item
         others = db.query(ItemClaim).filter(
             ItemClaim.item_id == item_id,
@@ -311,10 +334,30 @@ async def update_claim(
         ).all()
         for c in others:
             c.status = "rejected"
+            # Notify rejected claimants
+            create_notification(
+                db=db,
+                user_id=str(c.claimant_id),
+                notification_type="claim_rejected",
+                title="Claim Not Approved",
+                message=f"Your claim for '{item.title}' was not approved",
+                link=f"/items/{item_id}"
+            )
 
     elif new_status == "rejected":
         # Reject this claim
         claim.status = "rejected"
+        
+        # Notify claimant
+        create_notification(
+            db=db,
+            user_id=str(claim.claimant_id),
+            notification_type="claim_rejected",
+            title="Claim Rejected",
+            message=f"Your claim for '{item.title}' has been rejected",
+            link=f"/items/{item_id}"
+        )
+        
         # If it was previously approved and belongs to current claimant, reopen item
         if previous_status == "approved" and item.claimant_id == claim.claimant_id:
             # If no other approved claims remain, mark item active
