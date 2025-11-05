@@ -3,6 +3,9 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import axios from "axios";
+import NotificationBell from "../NotificationBell";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 export default function Navbar() {
   const router = useRouter();
@@ -12,28 +15,36 @@ export default function Navbar() {
 
   useEffect(() => {
     fetchUser();
-  }, []);
+  }, [pathname]);
 
   const fetchUser = async () => {
     const token = localStorage.getItem("token");
-    if (!token) return;
+    if (!token) {
+      setUser(null);
+      return;
+    }
     try {
       const [userRes, profileRes] = await Promise.all([
-        axios.get(`/api/v1/users/me`, {
+        axios.get(`${API_BASE}/users/me`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        axios.get(`/api/v1/users/profile`, {
+        axios.get(`${API_BASE}/users/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
-      setUser({ ...userRes.data, name: profileRes.data.name });
+      setUser({ ...userRes.data, ...profileRes.data, role: userRes.data.role });
     } catch (err) {
       console.error(err);
+      localStorage.removeItem("token");
+      document.cookie = "token=; Path=/; Max-Age=0";
+      setUser(null);
     }
   };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    document.cookie = "token=; Path=/; Max-Age=0";
+    setUser(null);
     router.push("/login");
   };
 
@@ -49,7 +60,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" className="text-xl font-bold text-primary">
+          <Link href={user ? "/dashboard" : "/"} className="text-xl font-bold text-primary">
             CampusConnect
           </Link>
 
@@ -68,20 +79,47 @@ export default function Navbar() {
                 <Link
                   href="/items"
                   className={`${
-                    isActive("/items") ? "text-primary font-semibold" : "text-gray-700"
+                    pathname.startsWith("/items") ? "text-primary font-semibold" : "text-gray-700"
                   } hover:text-primary transition`}
                 >
                   Lost & Found
                 </Link>
                 <Link
+                  href="/events"
+                  className={`${
+                    pathname.startsWith("/events") ? "text-primary font-semibold" : "text-gray-700"
+                  } hover:text-primary transition`}
+                >
+                  Events
+                </Link>
+                <Link
+                  href="/timetable"
+                  className={`${
+                    pathname.startsWith("/timetable") ? "text-primary font-semibold" : "text-gray-700"
+                  } hover:text-primary transition`}
+                >
+                  Timetable
+                </Link>
+                {user?.role === "admin" && (
+                  <Link
+                    href="/admin"
+                    className={`${
+                      pathname.startsWith("/admin") ? "text-primary font-semibold" : "text-gray-700"
+                    } hover:text-primary transition`}
+                  >
+                    Admin
+                  </Link>
+                )}
+                <Link
                   href="/profile"
                   className={`${
-                    isActive("/profile") ? "text-primary font-semibold" : "text-gray-700"
+                    pathname.startsWith("/profile") ? "text-primary font-semibold" : "text-gray-700"
                   } hover:text-primary transition`}
                 >
                   Profile
                 </Link>
                 <div className="flex items-center gap-3 pl-4 border-l">
+                  <NotificationBell />
                   <span className="text-sm text-gray-600">{user.name || user.email}</span>
                   <button
                     onClick={handleLogout}
@@ -168,6 +206,29 @@ export default function Navbar() {
                 >
                   Lost & Found
                 </Link>
+                <Link
+                  href="/events"
+                  onClick={() => setMenuOpen(false)}
+                  className="block py-2 text-gray-700 hover:text-primary"
+                >
+                  Events
+                </Link>
+                <Link
+                  href="/timetable"
+                  onClick={() => setMenuOpen(false)}
+                  className="block py-2 text-gray-700 hover:text-primary"
+                >
+                  Timetable
+                </Link>
+                {user?.role === "admin" && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setMenuOpen(false)}
+                    className="block py-2 text-gray-700 hover:text-primary"
+                  >
+                    Admin
+                  </Link>
+                )}
                 <Link
                   href="/profile"
                   onClick={() => setMenuOpen(false)}
