@@ -1,21 +1,56 @@
 {
   "name": "CampusConnect",
   "short_name": "CampusConnect",
-  "description": "Smart Campus Assistant",
+  "description": "Smart Campus Assistant - Lost & Found, Events, Timetable & More",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
+  "categories": ["education", "productivity", "social"],
   "icons": [
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Lost & Found",
+      "short_name": "Items",
+      "description": "Browse lost and found items",
+      "url": "/items",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Events",
+      "short_name": "Events",
+      "description": "View campus events",
+      "url": "/events",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Timetable",
+      "short_name": "Timetable",
+      "description": "View your schedule",
+      "url": "/timetable",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Feedback",
+      "short_name": "Feedback",
+      "description": "Submit anonymous feedback",
+      "url": "/feedback",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }
