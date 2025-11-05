@@ -6,10 +6,26 @@ import { useEffect, useState } from "react";
 export default function MobileNav() {
   const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-    setIsAuthenticated(!!token);
+    const checkAuth = () => {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      setIsAuthenticated(!!token);
+      
+      // Try to get user role from localStorage (can be set on login)
+      const storedUser = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+      if (storedUser) {
+        try {
+          const user = JSON.parse(storedUser);
+          setUserRole(user.role);
+        } catch (e) {
+          setUserRole(null);
+        }
+      }
+    };
+    
+    checkAuth();
   }, [pathname]);
 
   // Don't show mobile nav on auth pages or landing page for unauthenticated users
@@ -19,9 +35,10 @@ export default function MobileNav() {
 
   const tabs = isAuthenticated
     ? [
-        { href: "/dashboard", label: "Dashboard", icon: "🏠" },
+        { href: "/dashboard", label: "Home", icon: "🏠" },
         { href: "/items", label: "Items", icon: "🔍" },
         { href: "/events", label: "Events", icon: "📅" },
+        ...(userRole === "admin" ? [{ href: "/admin", label: "Admin", icon: "⚙️" }] : []),
         { href: "/profile", label: "Profile", icon: "👤" },
       ]
     : [];
