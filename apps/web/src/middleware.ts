@@ -2,10 +2,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // Routes that require authentication
-const protectedRoutes = ["/dashboard", "/items", "/profile", "/events", "/timetable", "/feedback"];
+const protectedRoutes = ["/dashboard", "/items", "/profile", "/events", "/timetable", "/feedback", "/admin"];
 
-// Routes that should redirect to dashboard if already authenticated
-const authRoutes = ["/login", "/signup"];
+// Auth routes are public; do NOT auto-redirect logged-in users to avoid UX loops
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
@@ -13,7 +12,7 @@ export function middleware(request: NextRequest) {
 
   // Check if the current route is protected
   const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
-  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
+  // Auth routes are public; we won't redirect away automatically
 
   // Redirect to login if accessing protected route without token
   if (isProtectedRoute && !token) {
@@ -22,10 +21,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Redirect to dashboard if accessing auth routes with valid token
-  if (isAuthRoute && token) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
 
   return NextResponse.next();
 }
